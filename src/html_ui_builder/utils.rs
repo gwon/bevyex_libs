@@ -66,10 +66,6 @@ pub fn convert_css_to_bevy_style(properties: &HashMap<String, CssPropertyValue>)
         left,
     }) = properties.get("padding")
     {
-        println!(
-            "xxx padding: {:?}, {:?}, {:?}, {:?}",
-            *top, *right, *bottom, *left
-        );
         node.padding = UiRect::new(*left, *right, *top, *bottom);
     }
 
@@ -81,10 +77,6 @@ pub fn convert_css_to_bevy_style(properties: &HashMap<String, CssPropertyValue>)
         left,
     }) = properties.get("margin")
     {
-        println!(
-            "xxx margin: {:?}, {:?}, {:?}, {:?}",
-            *top, *right, *bottom, *left
-        );
         node.margin = UiRect::new(*left, *right, *top, *bottom);
     }
 

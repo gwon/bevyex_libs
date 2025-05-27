@@ -1,6 +1,6 @@
 use bevy::ui::Val;
 use lightningcss::properties::Property;
-use lightningcss::properties::font::{AbsoluteFontSize, FontSize, RelativeFontSize};
+use lightningcss::properties::font::FontSize;
 use lightningcss::properties::size::Size;
 use lightningcss::rules::CssRule;
 use lightningcss::stylesheet::StyleSheet;
@@ -77,7 +77,7 @@ impl CssStyleSheet {
                         }
                         Property::Padding(padding) => {
                             let (top, right, bottom, left) =
-                                extract_rect_values(&Property::Padding(padding.clone()));
+                                extract_padding_values(&Property::Padding(padding.clone()));
                             properties.insert(
                                 "padding".to_string(),
                                 CssPropertyValue::Rect {
@@ -90,7 +90,7 @@ impl CssStyleSheet {
                         }
                         Property::Margin(margin) => {
                             let (top, right, bottom, left) =
-                                extract_rect_values(&Property::Margin(margin.clone()));
+                                extract_margin_values(&Property::Margin(margin.clone()));
                             properties.insert(
                                 "margin".to_string(),
                                 CssPropertyValue::Rect {
@@ -136,20 +136,6 @@ fn extract_font_size_value(size: &lightningcss::properties::font::FontSize) -> f
             DimensionPercentage::Dimension(len) => len.to_px().unwrap_or(0.0),
             DimensionPercentage::Percentage(pct) => pct.0,
             DimensionPercentage::Calc(_) => 0.0,
-        },
-        FontSize::Absolute(abs) => match abs {
-            AbsoluteFontSize::XXSmall => 10.0,
-            AbsoluteFontSize::XSmall => 13.0,
-            AbsoluteFontSize::Small => 16.0,
-            AbsoluteFontSize::Medium => 20.0,
-            AbsoluteFontSize::Large => 24.0,
-            AbsoluteFontSize::XLarge => 28.0,
-            AbsoluteFontSize::XXLarge => 28.0,
-            AbsoluteFontSize::XXXLarge => 32.0,
-        },
-        FontSize::Relative(rel) => match rel {
-            RelativeFontSize::Smaller => 12.0,
-            RelativeFontSize::Larger => 16.0,
         },
         _ => 16.0,
     }
@@ -212,13 +198,26 @@ fn extract_corner_values(
     (top_left, top_right, bottom_right, bottom_left)
 }
 
-fn extract_rect_values(padding: &Property<'_>) -> (Val, Val, Val, Val) {
+fn extract_padding_values(padding: &Property<'_>) -> (Val, Val, Val, Val) {
     match padding {
         Property::Padding(p) => {
             let top = extract_length_value(&p.top);
             let right = extract_length_value(&p.right);
             let bottom = extract_length_value(&p.bottom);
             let left = extract_length_value(&p.left);
+            (top, right, bottom, left)
+        }
+        _ => (Val::Px(0.0), Val::Px(0.0), Val::Px(0.0), Val::Px(0.0)),
+    }
+}
+
+fn extract_margin_values(padding: &Property<'_>) -> (Val, Val, Val, Val) {
+    match padding {
+        Property::Margin(m) => {
+            let top = extract_length_value(&m.top);
+            let right = extract_length_value(&m.right);
+            let bottom = extract_length_value(&m.bottom);
+            let left = extract_length_value(&m.left);
             (top, right, bottom, left)
         }
         _ => (Val::Px(0.0), Val::Px(0.0), Val::Px(0.0), Val::Px(0.0)),
