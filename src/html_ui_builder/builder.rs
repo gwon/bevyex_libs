@@ -1,10 +1,7 @@
 use super::css::CssStyleSheet;
 use super::element::UIElement;
 use bevy::prelude::*;
-use lightningcss::{
-    rules::CssRule,
-    stylesheet::{ParserOptions, StyleSheet},
-};
+use lightningcss::stylesheet::{ParserOptions, StyleSheet};
 
 use scraper::{Html, Selector};
 
@@ -72,12 +69,19 @@ impl HtmlCssUIBuilder {
     ) -> Vec<UIElement> {
         let mut elements = Vec::new();
 
-        // Select เฉพาะ elements ใน body
-        let body_selector = Selector::parse("body *").unwrap();
+        // Select เฉพาะ body element เพื่อสร้าง tree
+        let body_selector = Selector::parse("body").unwrap();
 
-        for element in document.select(&body_selector) {
-            let ui_element = UIElement::from_html_element(&element, stylesheet);
-            elements.push(ui_element);
+        if let Some(body_element) = document.select(&body_selector).next() {
+            // สร้าง children ของ body แบบ recursive
+            for child in body_element.children() {
+                if child.value().is_element() {
+                    let child_ref = scraper::ElementRef::wrap(child).unwrap();
+                    let ui_element =
+                        UIElement::from_html_element_with_children(&child_ref, stylesheet);
+                    elements.push(ui_element);
+                }
+            }
         }
 
         elements
@@ -103,20 +107,18 @@ impl HtmlCssUIBuilder {
         // สร้าง UI hierarchy แบบ recursive
         for element in elements {
             if element.tag == "div" && element.classes.contains(&"container".to_string()) {
-                let entity =
-                    self.spawn_element_with_children(commands, asset_server, element, elements);
+                let entity = self.spawn_element_recursive(commands, asset_server, element);
                 commands.entity(root).add_child(entity);
                 break; // ใช้แค่ container หลัก
             }
         }
     }
 
-    fn spawn_element_with_children(
+    fn spawn_element_recursive(
         &self,
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         element: &UIElement,
-        all_elements: &[UIElement],
     ) -> Entity {
         let mut entity_commands =
             commands.spawn((element.computed_style.clone(), element.background_color));
@@ -129,10 +131,22 @@ impl HtmlCssUIBuilder {
             )
         {
             entity_commands.with_children(|parent| {
+                // พยายามโหลด font file ก่อน
+                let font_path = "fonts/FiraSans-Bold.ttf";
+                let font_handle = asset_server.load(font_path);
+
+                // ตรวจสอบว่า font โหลดได้หรือไม่ ถ้าไม่ได้ใช้ default
+                let final_font_handle =
+                    if std::path::Path::new(&format!("assets/{}", font_path)).exists() {
+                        font_handle
+                    } else {
+                        Handle::default()
+                    };
+
                 parent.spawn((
                     Text::new(element.text.clone()),
                     TextFont {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font: final_font_handle,
                         font_size: element.font_size,
                         ..default()
                     },
@@ -148,70 +162,12 @@ impl HtmlCssUIBuilder {
 
         let entity_id = entity_commands.id();
 
-        // หา children elements และสร้างพวกมัน
-        for child_element in all_elements {
-            if self.is_child_of(child_element, element) {
-                let child_entity = self.spawn_element(commands, asset_server, child_element);
-                commands.entity(entity_id).add_child(child_entity);
-            }
+        // สร้าง children แบบ recursive
+        for child_element in &element.children {
+            let child_entity = self.spawn_element_recursive(commands, asset_server, child_element);
+            commands.entity(entity_id).add_child(child_entity);
         }
 
         entity_id
-    }
-
-    fn is_child_of(&self, potential_child: &UIElement, parent: &UIElement) -> bool {
-        // สำหรับตัวอย่างนี้ เราจะใช้ logic ง่ายๆ:
-        // h1 อยู่ใน main-content div
-        // card divs อยู่ใน main-content div
-        // p และ button อยู่ใน card divs
-
-        if parent.id == Some("main-content".to_string()) {
-            return potential_child.tag == "h1"
-                || (potential_child.tag == "div"
-                    && potential_child.classes.contains(&"card".to_string()));
-        }
-
-        if parent.tag == "div" && parent.classes.contains(&"card".to_string()) {
-            return potential_child.tag == "p" || potential_child.tag == "button";
-        }
-
-        false
-    }
-
-    fn spawn_element(
-        &self,
-        commands: &mut Commands,
-        asset_server: &Res<AssetServer>,
-        element: &UIElement,
-    ) -> Entity {
-        let mut entity_commands =
-            commands.spawn((element.computed_style.clone(), element.background_color));
-
-        // เพิ่ม text ถ้าเป็น text elements
-        if !element.text.is_empty()
-            && matches!(
-                element.tag.as_str(),
-                "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span" | "button"
-            )
-        {
-            entity_commands.with_children(|parent| {
-                parent.spawn((
-                    Text::new(element.text.clone()),
-                    TextFont {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: element.font_size,
-                        ..default()
-                    },
-                    TextColor(element.text_color),
-                ));
-            });
-        }
-
-        // เพิ่ม interaction สำหรับ button
-        if element.classes.contains(&"button".to_string()) || element.tag == "button" {
-            entity_commands.insert(Interaction::default());
-        }
-
-        entity_commands.id()
     }
 }
