@@ -114,6 +114,25 @@ pub fn extract_background_color(properties: &HashMap<String, CssPropertyValue>) 
     }
 }
 
+pub fn extract_border_radius(properties: &HashMap<String, CssPropertyValue>) -> BorderRadius {
+    if let Some(CssPropertyValue::BorderRadius {
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    }) = properties.get("border-radius")
+    {
+        BorderRadius::new(
+            Val::Px(*top_left),
+            Val::Px(*top_right),
+            Val::Px(*bottom_right),
+            Val::Px(*bottom_left),
+        )
+    } else {
+        BorderRadius::default()
+    }
+}
+
 pub fn extract_text_color(properties: &HashMap<String, CssPropertyValue>) -> Color {
     if let Some(CssPropertyValue::Color(color)) = properties.get("color") {
         css_color_to_bevy_color(color)

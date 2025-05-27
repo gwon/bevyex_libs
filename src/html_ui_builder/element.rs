@@ -1,3 +1,5 @@
+use crate::html_ui_builder::utils::extract_border_radius;
+
 use super::css::CssStyleSheet;
 use super::utils::{
     compute_element_styles, convert_css_to_bevy_style, extract_background_color, extract_font_size,
@@ -18,6 +20,7 @@ pub struct UIElement {
     pub background_color: BackgroundColor,
     pub text_color: Color,
     pub font_size: f32,
+    pub border_radius: BorderRadius,
 }
 
 impl UIElement {
@@ -45,6 +48,7 @@ impl UIElement {
 
         let computed_style = convert_css_to_bevy_style(&css_properties);
         let background_color = extract_background_color(&css_properties);
+        let border_radius = extract_border_radius(&css_properties);
         let text_color = extract_text_color(&css_properties);
         let font_size = extract_font_size(&css_properties);
         println!(
@@ -61,6 +65,7 @@ impl UIElement {
             background_color,
             text_color,
             font_size,
+            border_radius,
         }
     }
 
@@ -98,7 +103,7 @@ impl UIElement {
         let background_color = extract_background_color(&css_properties);
         let text_color = extract_text_color(&css_properties);
         let font_size = extract_font_size(&css_properties);
-
+        let border_radius = extract_border_radius(&css_properties);
         // สร้าง children แบบ recursive
         let children: Vec<UIElement> = element
             .children()
@@ -129,6 +134,7 @@ impl UIElement {
             background_color,
             text_color,
             font_size,
+            border_radius,
         }
     }
 }

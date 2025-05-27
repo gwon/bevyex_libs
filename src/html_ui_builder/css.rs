@@ -2,6 +2,10 @@ use lightningcss::properties::Property;
 use lightningcss::rules::CssRule;
 use lightningcss::stylesheet::StyleSheet;
 use lightningcss::values::color::CssColor;
+use lightningcss::values::length::LengthPercentage;
+use lightningcss::values::length::LengthValue;
+use lightningcss::values::percentage::DimensionPercentage;
+use lightningcss::values::size::Size2D;
 use std::collections::HashMap;
 use std::default::Default;
 
@@ -33,6 +37,12 @@ pub enum CssPropertyValue {
         right: f32,
         bottom: f32,
         left: f32,
+    },
+    BorderRadius {
+        top_left: f32,
+        top_right: f32,
+        bottom_right: f32,
+        bottom_left: f32,
     },
 }
 
@@ -106,6 +116,19 @@ impl CssStyleSheet {
                                     right,
                                     bottom,
                                     left,
+                                },
+                            );
+                        }
+                        Property::BorderRadius(border_radius, _) => {
+                            let (top_left, top_right, bottom_right, bottom_left) =
+                                extract_border_radius_values(&border_radius);
+                            properties.insert(
+                                "border-radius".to_string(),
+                                CssPropertyValue::BorderRadius {
+                                    top_left,
+                                    top_right,
+                                    bottom_right,
+                                    bottom_left,
                                 },
                             );
                         }
@@ -184,6 +207,24 @@ fn extract_length_value(
         },
         _ => Some((0.0, "px".to_string())),
     }
+}
+
+fn extract_value(dim_pct: &DimensionPercentage<lightningcss::values::length::LengthValue>) -> f32 {
+    match dim_pct {
+        DimensionPercentage::Dimension(len) => len.to_px().unwrap_or(0.0),
+        DimensionPercentage::Percentage(pct) => pct.0,
+        DimensionPercentage::Calc(_) => 0.0,
+    }
+}
+
+fn extract_border_radius_values(
+    border_radius: &lightningcss::properties::border_radius::BorderRadius,
+) -> (f32, f32, f32, f32) {
+    let top_left = extract_value(&border_radius.top_left.0);
+    let top_right = extract_value(&border_radius.top_right.0);
+    let bottom_right = extract_value(&border_radius.bottom_right.0);
+    let bottom_left = extract_value(&border_radius.bottom_left.0);
+    (top_left, top_right, bottom_right, bottom_left)
 }
 
 fn extract_padding_values(padding: &Property<'_>) -> (f32, f32, f32, f32) {

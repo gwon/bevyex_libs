@@ -120,8 +120,11 @@ impl HtmlCssUIBuilder {
         asset_server: &Res<AssetServer>,
         element: &UIElement,
     ) -> Entity {
-        let mut entity_commands =
-            commands.spawn((element.computed_style.clone(), element.background_color));
+        let mut entity_commands = commands.spawn((
+            element.computed_style.clone(),
+            element.background_color,
+            element.border_radius,
+        ));
 
         // เพิ่ม text ถ้าเป็น text elements เช่น h1, p, button
         if !element.text.is_empty()
