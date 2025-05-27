@@ -132,7 +132,7 @@ impl HtmlCssUIBuilder {
         {
             entity_commands.with_children(|parent| {
                 // พยายามโหลด font file ก่อน
-                let font_path = "fonts/FiraSans-Bold.ttf";
+                let font_path = "fonts/Prompt-Medium.ttf";
                 let font_handle = asset_server.load(font_path);
 
                 // ตรวจสอบว่า font โหลดได้หรือไม่ ถ้าไม่ได้ใช้ default
