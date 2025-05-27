@@ -22,6 +22,18 @@ pub enum CssPropertyValue {
     Length(f32, String), // value, unit
     String(String),
     Number(f32),
+    Padding {
+        top: f32,
+        right: f32,
+        bottom: f32,
+        left: f32,
+    },
+    Margin {
+        top: f32,
+        right: f32,
+        bottom: f32,
+        left: f32,
+    },
 }
 
 impl CssStyleSheet {
@@ -72,16 +84,29 @@ impl CssStyleSheet {
                             }
                         }
                         Property::Padding(padding) => {
-                            // Simplified - ในการใช้งานจริงต้อง handle ทุก side
+                            let (top, right, bottom, left) =
+                                extract_padding_values(&Property::Padding(padding.clone()));
                             properties.insert(
                                 "padding".to_string(),
-                                CssPropertyValue::String(format!("{:?}", padding)),
+                                CssPropertyValue::Padding {
+                                    top,
+                                    right,
+                                    bottom,
+                                    left,
+                                },
                             );
                         }
                         Property::Margin(margin) => {
+                            let (top, right, bottom, left) =
+                                extract_margin_values(&Property::Margin(margin.clone()));
                             properties.insert(
                                 "margin".to_string(),
-                                CssPropertyValue::String(format!("{:?}", margin)),
+                                CssPropertyValue::Margin {
+                                    top,
+                                    right,
+                                    bottom,
+                                    left,
+                                },
                             );
                         }
                         _ => {} // Handle other properties as needed
@@ -140,4 +165,49 @@ fn extract_size_value(size: &lightningcss::properties::size::Size) -> Option<(f3
         }
     }
     Some((100.0, "px".to_string())) // default fallback
+}
+
+fn extract_length_value(
+    size: &lightningcss::values::length::LengthPercentageOrAuto,
+) -> Option<(f32, String)> {
+    match size {
+        lightningcss::values::length::LengthPercentageOrAuto::LengthPercentage(lp) => match lp {
+            lightningcss::values::length::LengthPercentage::Dimension(l) => {
+                Some((l.to_px().unwrap_or(0.0), "px".to_string()))
+            }
+            lightningcss::values::length::LengthPercentage::Percentage(p) => {
+                Some((p.0 * 100.0, "%".to_string()))
+            }
+            lightningcss::values::length::LengthPercentage::Calc(_) => {
+                Some((0.0, "px".to_string()))
+            }
+        },
+        _ => Some((0.0, "px".to_string())),
+    }
+}
+
+fn extract_padding_values(padding: &Property<'_>) -> (f32, f32, f32, f32) {
+    match padding {
+        Property::Padding(p) => {
+            let top = extract_length_value(&p.top).map_or(0.0, |(v, _)| v);
+            let right = extract_length_value(&p.right).map_or(0.0, |(v, _)| v);
+            let bottom = extract_length_value(&p.bottom).map_or(0.0, |(v, _)| v);
+            let left = extract_length_value(&p.left).map_or(0.0, |(v, _)| v);
+            (top, right, bottom, left)
+        }
+        _ => (0.0, 0.0, 0.0, 0.0),
+    }
+}
+
+fn extract_margin_values(margin: &Property<'_>) -> (f32, f32, f32, f32) {
+    match margin {
+        Property::Margin(m) => {
+            let top = extract_length_value(&m.top).map_or(0.0, |(v, _)| v);
+            let right = extract_length_value(&m.right).map_or(0.0, |(v, _)| v);
+            let bottom = extract_length_value(&m.bottom).map_or(0.0, |(v, _)| v);
+            let left = extract_length_value(&m.left).map_or(0.0, |(v, _)| v);
+            (top, right, bottom, left)
+        }
+        _ => (0.0, 0.0, 0.0, 0.0),
+    }
 }

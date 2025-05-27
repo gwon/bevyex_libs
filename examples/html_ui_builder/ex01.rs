@@ -19,6 +19,7 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             <style>
                 .container {
                     padding: 20px;
+                    margin: 10px;
                     background-color:rgb(202, 1, 1);
                     width: 800px;
                     height: 600px;
@@ -27,7 +28,8 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .title {
                     font-size: 32px;
                     color: #333333;
-                    margin-bottom: 20px;
+                    margin: 20px 0;
+                    padding: 10px;
                     text-align: center;
                 }
                 
@@ -54,6 +56,15 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     width: 300px;
                 }
+
+                .card2 {
+                    background-color: red;
+                    padding: 16px;
+                    margin: 12px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    width: 300px;
+                }
                 
                 #main-content {
                     display: flex;
@@ -70,7 +81,7 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                         <p>นี่คือการ์ดตัวอย่าง</p>
                         <button class="button">คลิกที่นี่</button>
                     </div>
-                    <div class="card">
+                    <div class="card2">
                         <p>การ์ดที่สอง</p>
                         <button class="button">ปุ่มอื่น</button>
                     </div>

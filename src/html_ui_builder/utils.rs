@@ -66,6 +66,38 @@ pub fn convert_css_to_bevy_style(properties: &HashMap<String, CssPropertyValue>)
         };
     }
 
+    // Handle padding
+    if let Some(CssPropertyValue::Padding {
+        top,
+        right,
+        bottom,
+        left,
+    }) = properties.get("padding")
+    {
+        style.padding = UiRect::new(
+            Val::Px(*left),
+            Val::Px(*right),
+            Val::Px(*top),
+            Val::Px(*bottom),
+        );
+    }
+
+    // Handle margin
+    if let Some(CssPropertyValue::Margin {
+        top,
+        right,
+        bottom,
+        left,
+    }) = properties.get("margin")
+    {
+        style.margin = UiRect::new(
+            Val::Px(*left),
+            Val::Px(*right),
+            Val::Px(*top),
+            Val::Px(*bottom),
+        );
+    }
+
     // Default layout for containers
     style.flex_direction = FlexDirection::Column;
     style.justify_content = JustifyContent::Center;
