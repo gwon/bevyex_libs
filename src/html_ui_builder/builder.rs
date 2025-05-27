@@ -100,27 +100,34 @@ impl HtmlCssUIBuilder {
             })
             .id();
 
-        // สร้าง UI hierarchy
+        // สร้าง UI hierarchy แบบ recursive
         for element in elements {
             if element.tag == "div" && element.classes.contains(&"container".to_string()) {
-                let entity = self.spawn_element(commands, asset_server, element);
+                let entity =
+                    self.spawn_element_with_children(commands, asset_server, element, elements);
                 commands.entity(root).add_child(entity);
                 break; // ใช้แค่ container หลัก
             }
         }
     }
 
-    fn spawn_element(
+    fn spawn_element_with_children(
         &self,
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         element: &UIElement,
+        all_elements: &[UIElement],
     ) -> Entity {
         let mut entity_commands =
             commands.spawn((element.computed_style.clone(), element.background_color));
 
-        // เพิ่ม text ถ้ามี
-        if !element.text.is_empty() && !element.tag.starts_with("div") {
+        // เพิ่ม text ถ้าเป็น text elements เช่น h1, p, button
+        if !element.text.is_empty()
+            && matches!(
+                element.tag.as_str(),
+                "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span" | "button"
+            )
+        {
             entity_commands.with_children(|parent| {
                 parent.spawn((
                     Text::new(element.text.clone()),
@@ -135,7 +142,73 @@ impl HtmlCssUIBuilder {
         }
 
         // เพิ่ม interaction สำหรับ button
-        if element.classes.contains(&"button".to_string()) {
+        if element.classes.contains(&"button".to_string()) || element.tag == "button" {
+            entity_commands.insert(Interaction::default());
+        }
+
+        let entity_id = entity_commands.id();
+
+        // หา children elements และสร้างพวกมัน
+        for child_element in all_elements {
+            if self.is_child_of(child_element, element) {
+                let child_entity = self.spawn_element(commands, asset_server, child_element);
+                commands.entity(entity_id).add_child(child_entity);
+            }
+        }
+
+        entity_id
+    }
+
+    fn is_child_of(&self, potential_child: &UIElement, parent: &UIElement) -> bool {
+        // สำหรับตัวอย่างนี้ เราจะใช้ logic ง่ายๆ:
+        // h1 อยู่ใน main-content div
+        // card divs อยู่ใน main-content div
+        // p และ button อยู่ใน card divs
+
+        if parent.id == Some("main-content".to_string()) {
+            return potential_child.tag == "h1"
+                || (potential_child.tag == "div"
+                    && potential_child.classes.contains(&"card".to_string()));
+        }
+
+        if parent.tag == "div" && parent.classes.contains(&"card".to_string()) {
+            return potential_child.tag == "p" || potential_child.tag == "button";
+        }
+
+        false
+    }
+
+    fn spawn_element(
+        &self,
+        commands: &mut Commands,
+        asset_server: &Res<AssetServer>,
+        element: &UIElement,
+    ) -> Entity {
+        let mut entity_commands =
+            commands.spawn((element.computed_style.clone(), element.background_color));
+
+        // เพิ่ม text ถ้าเป็น text elements
+        if !element.text.is_empty()
+            && matches!(
+                element.tag.as_str(),
+                "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span" | "button"
+            )
+        {
+            entity_commands.with_children(|parent| {
+                parent.spawn((
+                    Text::new(element.text.clone()),
+                    TextFont {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: element.font_size,
+                        ..default()
+                    },
+                    TextColor(element.text_color),
+                ));
+            });
+        }
+
+        // เพิ่ม interaction สำหรับ button
+        if element.classes.contains(&"button".to_string()) || element.tag == "button" {
             entity_commands.insert(Interaction::default());
         }
 

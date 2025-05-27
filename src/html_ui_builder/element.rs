@@ -46,7 +46,10 @@ impl UIElement {
         let background_color = extract_background_color(&css_properties);
         let text_color = extract_text_color(&css_properties);
         let font_size = extract_font_size(&css_properties);
-
+        println!(
+            "element: tag:{:?}, id:{:?}, classes:{:?}\n",
+            tag, id, classes
+        );
         UIElement {
             tag,
             id,
