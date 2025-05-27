@@ -48,62 +48,52 @@ pub fn compute_element_styles(
 }
 
 pub fn convert_css_to_bevy_style(properties: &HashMap<String, CssPropertyValue>) -> Node {
-    let mut style = Node::default();
+    let mut node = Node::default();
 
-    if let Some(CssPropertyValue::Length(value, unit)) = properties.get("width") {
-        style.width = match unit.as_str() {
-            "px" => Val::Px(*value),
-            "%" => Val::Percent(*value),
-            _ => Val::Auto,
-        };
+    if let Some(CssPropertyValue::Size(value)) = properties.get("width") {
+        node.width = Val::Px(*value);
     }
 
-    if let Some(CssPropertyValue::Length(value, unit)) = properties.get("height") {
-        style.height = match unit.as_str() {
-            "px" => Val::Px(*value),
-            "%" => Val::Percent(*value),
-            _ => Val::Auto,
-        };
+    if let Some(CssPropertyValue::Size(value)) = properties.get("height") {
+        node.height = Val::Px(*value);
     }
 
     // Handle padding
-    if let Some(CssPropertyValue::Padding {
+    if let Some(CssPropertyValue::Rect {
         top,
         right,
         bottom,
         left,
     }) = properties.get("padding")
     {
-        style.padding = UiRect::new(
-            Val::Px(*left),
-            Val::Px(*right),
-            Val::Px(*top),
-            Val::Px(*bottom),
+        println!(
+            "xxx padding: {:?}, {:?}, {:?}, {:?}",
+            *top, *right, *bottom, *left
         );
+        node.padding = UiRect::new(*left, *right, *top, *bottom);
     }
 
     // Handle margin
-    if let Some(CssPropertyValue::Margin {
+    if let Some(CssPropertyValue::Rect {
         top,
         right,
         bottom,
         left,
     }) = properties.get("margin")
     {
-        style.margin = UiRect::new(
-            Val::Px(*left),
-            Val::Px(*right),
-            Val::Px(*top),
-            Val::Px(*bottom),
+        println!(
+            "xxx margin: {:?}, {:?}, {:?}, {:?}",
+            *top, *right, *bottom, *left
         );
+        node.margin = UiRect::new(*left, *right, *top, *bottom);
     }
 
     // Default layout for containers
-    style.flex_direction = FlexDirection::Column;
-    style.justify_content = JustifyContent::Center;
-    style.align_items = AlignItems::Center;
+    node.flex_direction = FlexDirection::Column;
+    node.justify_content = JustifyContent::Center;
+    node.align_items = AlignItems::Center;
 
-    style
+    node
 }
 
 pub fn extract_background_color(properties: &HashMap<String, CssPropertyValue>) -> BackgroundColor {
@@ -115,19 +105,14 @@ pub fn extract_background_color(properties: &HashMap<String, CssPropertyValue>) 
 }
 
 pub fn extract_border_radius(properties: &HashMap<String, CssPropertyValue>) -> BorderRadius {
-    if let Some(CssPropertyValue::BorderRadius {
+    if let Some(CssPropertyValue::Corner {
         top_left,
         top_right,
         bottom_right,
         bottom_left,
     }) = properties.get("border-radius")
     {
-        BorderRadius::new(
-            Val::Px(*top_left),
-            Val::Px(*top_right),
-            Val::Px(*bottom_right),
-            Val::Px(*bottom_left),
-        )
+        BorderRadius::new(*top_left, *top_right, *bottom_right, *bottom_left)
     } else {
         BorderRadius::default()
     }
@@ -142,15 +127,10 @@ pub fn extract_text_color(properties: &HashMap<String, CssPropertyValue>) -> Col
 }
 
 pub fn extract_font_size(properties: &HashMap<String, CssPropertyValue>) -> f32 {
-    if let Some(CssPropertyValue::Length(size, unit)) = properties.get("font-size") {
-        match unit.as_str() {
-            "px" => *size,
-            "em" => *size * 16.0,
-            "rem" => *size * 16.0,
-            _ => 16.0,
-        }
-    } else {
-        16.0
+    let size = properties.get("font-size");
+    match size {
+        Some(CssPropertyValue::Size(size)) => *size,
+        _ => 16.0,
     }
 }
 

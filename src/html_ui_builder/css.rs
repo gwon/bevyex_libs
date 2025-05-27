@@ -1,11 +1,11 @@
+use bevy::ui::Val;
 use lightningcss::properties::Property;
+use lightningcss::properties::font::{AbsoluteFontSize, FontSize, RelativeFontSize};
+use lightningcss::properties::size::Size;
 use lightningcss::rules::CssRule;
 use lightningcss::stylesheet::StyleSheet;
 use lightningcss::values::color::CssColor;
-use lightningcss::values::length::LengthPercentage;
-use lightningcss::values::length::LengthValue;
 use lightningcss::values::percentage::DimensionPercentage;
-use lightningcss::values::size::Size2D;
 use std::collections::HashMap;
 use std::default::Default;
 
@@ -23,26 +23,19 @@ pub struct CssRule_ {
 #[derive(Debug, Clone)]
 pub enum CssPropertyValue {
     Color(CssColor),
-    Length(f32, String), // value, unit
+    Size(f32),
     String(String),
-    Number(f32),
-    Padding {
-        top: f32,
-        right: f32,
-        bottom: f32,
-        left: f32,
+    Rect {
+        top: Val,
+        right: Val,
+        bottom: Val,
+        left: Val,
     },
-    Margin {
-        top: f32,
-        right: f32,
-        bottom: f32,
-        left: f32,
-    },
-    BorderRadius {
-        top_left: f32,
-        top_right: f32,
-        bottom_right: f32,
-        bottom_left: f32,
+    Corner {
+        top_left: Val,
+        top_right: Val,
+        bottom_right: Val,
+        bottom_left: Val,
     },
 }
 
@@ -70,35 +63,24 @@ impl CssStyleSheet {
                             );
                         }
                         Property::FontSize(size) => {
-                            if let Some((value, unit)) = extract_font_size_value(size) {
-                                properties.insert(
-                                    "font-size".to_string(),
-                                    CssPropertyValue::Length(value, unit),
-                                );
-                            }
+                            let font_size = extract_font_size_value(size);
+                            properties
+                                .insert("font-size".to_string(), CssPropertyValue::Size(font_size));
                         }
                         Property::Width(width) => {
-                            if let Some((value, unit)) = extract_size_value(width) {
-                                properties.insert(
-                                    "width".to_string(),
-                                    CssPropertyValue::Length(value, unit),
-                                );
-                            }
+                            let value = extract_size_value(width);
+                            properties.insert("width".to_string(), CssPropertyValue::Size(value));
                         }
                         Property::Height(height) => {
-                            if let Some((value, unit)) = extract_size_value(height) {
-                                properties.insert(
-                                    "height".to_string(),
-                                    CssPropertyValue::Length(value, unit),
-                                );
-                            }
+                            let value = extract_size_value(height);
+                            properties.insert("height".to_string(), CssPropertyValue::Size(value));
                         }
                         Property::Padding(padding) => {
                             let (top, right, bottom, left) =
-                                extract_padding_values(&Property::Padding(padding.clone()));
+                                extract_rect_values(&Property::Padding(padding.clone()));
                             properties.insert(
                                 "padding".to_string(),
-                                CssPropertyValue::Padding {
+                                CssPropertyValue::Rect {
                                     top,
                                     right,
                                     bottom,
@@ -108,10 +90,10 @@ impl CssStyleSheet {
                         }
                         Property::Margin(margin) => {
                             let (top, right, bottom, left) =
-                                extract_margin_values(&Property::Margin(margin.clone()));
+                                extract_rect_values(&Property::Margin(margin.clone()));
                             properties.insert(
                                 "margin".to_string(),
-                                CssPropertyValue::Margin {
+                                CssPropertyValue::Rect {
                                     top,
                                     right,
                                     bottom,
@@ -121,10 +103,10 @@ impl CssStyleSheet {
                         }
                         Property::BorderRadius(border_radius, _) => {
                             let (top_left, top_right, bottom_right, bottom_left) =
-                                extract_border_radius_values(&border_radius);
+                                extract_corner_values(&border_radius);
                             properties.insert(
                                 "border-radius".to_string(),
-                                CssPropertyValue::BorderRadius {
+                                CssPropertyValue::Corner {
                                     top_left,
                                     top_right,
                                     bottom_right,
@@ -148,78 +130,81 @@ impl CssStyleSheet {
 }
 
 // Helper functions
-fn extract_font_size_value(
-    size: &lightningcss::properties::font::FontSize,
-) -> Option<(f32, String)> {
-    // ใช้ debug format เป็นทางเลือกชั่วคราว
-    let size_str = format!("{:?}", size);
-    if size_str.contains("Px(") {
-        // Extract px value from debug string
-        if let Some(start) = size_str.find("Px(") {
-            if let Some(end) = size_str[start + 3..].find(')') {
-                if let Ok(value) = size_str[start + 3..start + 3 + end].parse::<f32>() {
-                    return Some((value, "px".to_string()));
-                }
-            }
-        }
+fn extract_font_size_value(size: &lightningcss::properties::font::FontSize) -> f32 {
+    match size {
+        FontSize::Length(length) => match length {
+            DimensionPercentage::Dimension(len) => len.to_px().unwrap_or(0.0),
+            DimensionPercentage::Percentage(pct) => pct.0,
+            DimensionPercentage::Calc(_) => 0.0,
+        },
+        FontSize::Absolute(abs) => match abs {
+            AbsoluteFontSize::XXSmall => 10.0,
+            AbsoluteFontSize::XSmall => 13.0,
+            AbsoluteFontSize::Small => 16.0,
+            AbsoluteFontSize::Medium => 20.0,
+            AbsoluteFontSize::Large => 24.0,
+            AbsoluteFontSize::XLarge => 28.0,
+            AbsoluteFontSize::XXLarge => 28.0,
+            AbsoluteFontSize::XXXLarge => 32.0,
+        },
+        FontSize::Relative(rel) => match rel {
+            RelativeFontSize::Smaller => 12.0,
+            RelativeFontSize::Larger => 16.0,
+        },
+        _ => 16.0,
     }
-    Some((16.0, "px".to_string())) // default fallback
 }
 
-fn extract_size_value(size: &lightningcss::properties::size::Size) -> Option<(f32, String)> {
-    // ใช้ debug format เป็นทางเลือกชั่วคราว
-    let size_str = format!("{:?}", size);
-    if size_str.contains("Px(") {
-        if let Some(start) = size_str.find("Px(") {
-            if let Some(end) = size_str[start + 3..].find(')') {
-                if let Ok(value) = size_str[start + 3..start + 3 + end].parse::<f32>() {
-                    return Some((value, "px".to_string()));
+fn extract_size_value(size: &lightningcss::properties::size::Size) -> f32 {
+    match size {
+        Size::LengthPercentage(dim_pct) => {
+            match dim_pct {
+                DimensionPercentage::Dimension(len) => {
+                    // แปลงเป็น px
+                    len.to_px().unwrap_or(0.0)
+                }
+                DimensionPercentage::Percentage(pct) => pct.0 * 100.0,
+                DimensionPercentage::Calc(_) => {
+                    // handle calc() expressions
+                    10.0
                 }
             }
         }
+        Size::Auto => 10.0,
+        Size::MaxContent(_) => 10.0,
+        Size::MinContent(_) => 10.0,
+        Size::FitContent(_) => 10.0,
+        Size::Stretch(_) => 10.0,
+        _ => 10.0,
     }
-    if size_str.contains("Percentage(") {
-        if let Some(start) = size_str.find("Percentage(") {
-            if let Some(end) = size_str[start + 11..].find(')') {
-                if let Ok(value) = size_str[start + 11..start + 11 + end].parse::<f32>() {
-                    return Some((value, "%".to_string()));
-                }
-            }
-        }
-    }
-    Some((100.0, "px".to_string())) // default fallback
 }
 
-fn extract_length_value(
-    size: &lightningcss::values::length::LengthPercentageOrAuto,
-) -> Option<(f32, String)> {
+fn extract_length_value(size: &lightningcss::values::length::LengthPercentageOrAuto) -> Val {
     match size {
         lightningcss::values::length::LengthPercentageOrAuto::LengthPercentage(lp) => match lp {
             lightningcss::values::length::LengthPercentage::Dimension(l) => {
-                Some((l.to_px().unwrap_or(0.0), "px".to_string()))
+                Val::Px(l.to_px().unwrap_or(0.0))
             }
             lightningcss::values::length::LengthPercentage::Percentage(p) => {
-                Some((p.0 * 100.0, "%".to_string()))
+                Val::Percent(p.0 * 100.0)
             }
-            lightningcss::values::length::LengthPercentage::Calc(_) => {
-                Some((0.0, "px".to_string()))
-            }
+            lightningcss::values::length::LengthPercentage::Calc(_) => Val::Px(0.0),
         },
-        _ => Some((0.0, "px".to_string())),
+        _ => Val::Px(0.0),
     }
 }
 
-fn extract_value(dim_pct: &DimensionPercentage<lightningcss::values::length::LengthValue>) -> f32 {
+fn extract_value(dim_pct: &DimensionPercentage<lightningcss::values::length::LengthValue>) -> Val {
     match dim_pct {
-        DimensionPercentage::Dimension(len) => len.to_px().unwrap_or(0.0),
-        DimensionPercentage::Percentage(pct) => pct.0,
-        DimensionPercentage::Calc(_) => 0.0,
+        DimensionPercentage::Dimension(len) => Val::Px(len.to_px().unwrap_or(0.0)),
+        DimensionPercentage::Percentage(pct) => Val::Percent(pct.0),
+        DimensionPercentage::Calc(_) => Val::Px(0.0),
     }
 }
 
-fn extract_border_radius_values(
+fn extract_corner_values(
     border_radius: &lightningcss::properties::border_radius::BorderRadius,
-) -> (f32, f32, f32, f32) {
+) -> (Val, Val, Val, Val) {
     let top_left = extract_value(&border_radius.top_left.0);
     let top_right = extract_value(&border_radius.top_right.0);
     let bottom_right = extract_value(&border_radius.bottom_right.0);
@@ -227,28 +212,15 @@ fn extract_border_radius_values(
     (top_left, top_right, bottom_right, bottom_left)
 }
 
-fn extract_padding_values(padding: &Property<'_>) -> (f32, f32, f32, f32) {
+fn extract_rect_values(padding: &Property<'_>) -> (Val, Val, Val, Val) {
     match padding {
         Property::Padding(p) => {
-            let top = extract_length_value(&p.top).map_or(0.0, |(v, _)| v);
-            let right = extract_length_value(&p.right).map_or(0.0, |(v, _)| v);
-            let bottom = extract_length_value(&p.bottom).map_or(0.0, |(v, _)| v);
-            let left = extract_length_value(&p.left).map_or(0.0, |(v, _)| v);
+            let top = extract_length_value(&p.top);
+            let right = extract_length_value(&p.right);
+            let bottom = extract_length_value(&p.bottom);
+            let left = extract_length_value(&p.left);
             (top, right, bottom, left)
         }
-        _ => (0.0, 0.0, 0.0, 0.0),
-    }
-}
-
-fn extract_margin_values(margin: &Property<'_>) -> (f32, f32, f32, f32) {
-    match margin {
-        Property::Margin(m) => {
-            let top = extract_length_value(&m.top).map_or(0.0, |(v, _)| v);
-            let right = extract_length_value(&m.right).map_or(0.0, |(v, _)| v);
-            let bottom = extract_length_value(&m.bottom).map_or(0.0, |(v, _)| v);
-            let left = extract_length_value(&m.left).map_or(0.0, |(v, _)| v);
-            (top, right, bottom, left)
-        }
-        _ => (0.0, 0.0, 0.0, 0.0),
+        _ => (Val::Px(0.0), Val::Px(0.0), Val::Px(0.0), Val::Px(0.0)),
     }
 }

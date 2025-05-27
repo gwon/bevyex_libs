@@ -99,6 +99,7 @@ impl UIElement {
             HashMap::new()
         };
 
+        println!("css_properties: {:?} ", &id);
         let computed_style = convert_css_to_bevy_style(&css_properties);
         let background_color = extract_background_color(&css_properties);
         let text_color = extract_text_color(&css_properties);

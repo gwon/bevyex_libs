@@ -18,8 +18,6 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         <head>
             <style>
                 .container {
-                    padding: 20px;
-                    margin: 10px;
                     background-color:rgb(202, 1, 1);
                     width: 800px;
                     height: 600px;
@@ -28,16 +26,12 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .title {
                     font-size: 32px;
                     color: #333333;
-                    margin: 20px 0;
-                    padding: 10px;
                     text-align: center;
                 }
                 
                 .button {
                     background-color: #007bff;
                     color: white;
-                    padding: 12px 24px;
-                    margin: 10px;
                     border-radius: 6px;
                     width: 200px;
                     height: 50px;
@@ -81,7 +75,7 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                         <p>นี่คือการ์ดตัวอย่าง</p>
                         <button class="button">คลิกที่นี่</button>
                     </div>
-                    <div class="card2">
+                    <div id="card2" class="card2">
                         <p>การ์ดที่สอง</p>
                         <button class="button">ปุ่มอื่น</button>
                     </div>
