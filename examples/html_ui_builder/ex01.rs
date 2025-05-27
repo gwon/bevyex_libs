@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_html_ui_builder::HtmlCssUIBuilder;
+use bevyex_lib::html_ui_builder::HtmlCssUIBuilder;
 
 fn main() {
     App::new()
@@ -10,7 +10,7 @@ fn main() {
 
 fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Camera สำหรับ UI
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // HTML + CSS content
     let html_content = r#"
@@ -19,7 +19,7 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             <style>
                 .container {
                     padding: 20px;
-                    background-color: #f0f0f0;
+                    background-color:rgb(202, 1, 1);
                     width: 800px;
                     height: 600px;
                 }
@@ -81,7 +81,7 @@ fn setup_html_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     "#;
 
     // Parse และสร้าง UI
-    let ui_builder = HtmlCssUIBuilder::new();
+    let mut ui_builder = HtmlCssUIBuilder::new();
     if let Ok(elements) = ui_builder.parse_and_build(html_content) {
         ui_builder.spawn_bevy_ui(&mut commands, &asset_server, &elements);
     }
